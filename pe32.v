@@ -1,7 +1,8 @@
 module pe32
 
-import binary
 import os
+import encoding.binary
+
 
 // https://blog.kowalczyk.info/articles/pefileformat.html
 
@@ -31,7 +32,8 @@ const (
 	IMAGE_DEBUG_TYPE_MISC = 4
 )
 
-struct IMAGE_DOS_HEADER {
+pub struct IMAGE_DOS_HEADER {
+pub mut:
 	e_magic u16		// Magic number
 	e_cblp u16 		// Bytes on last page of file
 	e_cp u16		// Pages in file
@@ -53,129 +55,139 @@ struct IMAGE_DOS_HEADER {
 	e_lfanew u32	// File address of new exe header
 }
 
-struct IMAGE_FILE_HEADER {
-	Machine u16 
-	NumberOfSections u16 
-	TimeDateStamp u32
-	PointerToSymbolTable u32
-	NumberOfSymbols u32 
-	SizeOfOptionalHeader u16
-    Characteristics u16;
+pub struct IMAGE_FILE_HEADER {
+pub mut:
+	machine u16 
+	number_of_sections u16 
+	time_date_stamp u32
+	pointer_to_symbol_table u32
+	number_of_symbols u32 
+	size_of_optional_header u16
+    characteristics u16
 }
 
-type IMAGE_DATA_DIRECTORY {
-	VirtualAddress u32
-	Size u32
+pub struct IMAGE_DATA_DIRECTORY {
+pub mut:
+	virtual_address u32
+	size u32
 }
 
-struct IMAGE_OPTIONAL_HEADER {
+pub struct IMAGE_OPTIONAL_HEADER {
+pub mut:
+	data_directory [IMAGE_NUMBEROF_DIRECTORY_ENTRIES]IMAGE_DATA_DIRECTORY
 	// Standard fields.
-	Magic u16
-	MajorLinkerVersion byte 
-	MinorLinkerVersion byte 
-	SizeOfCode u32 
-	SizeOfInitializedData u32 
-	SizeOfUninitializedData u32
-	AddressOfEntryPoint u32 
-	BaseOfCode u32 
-	BaseOfData u32
+	magic u16
+	major_linker_version byte 
+	minor_linker_version byte 
+	size_of_code u32 
+	size_of_initialized_data u32 
+	size_of_uninitialized_data u32
+	address_of_entry_point u32 
+	base_of_code u32 
+	base_of_data u32
 	// NT additional fields.
-	ImageBase u32 
-	SectionAlignment u32 
-	FileAlignment u32 
-	MajorOperatingSystemVersion u16 
-	MinorOperatingSystemVersion u16 
-	MajorImageVersion u16 
-	MinorImageVersion u16
-	MajorSubsystemVersion u16
-	MinorSubsystemVersion u16 
-	Reserved1 u32 
-    SizeOfImage u32
-	SizeOfHeaders u32 
-	CheckSum u32 
-	Subsystem u16
- 	DllCharacteristics u16 
-	SizeOfStackReserve u16 
-	SizeOfStackCommit u16 
-	SizeOfHeapReserve u16 
-	SizeOfHeapCommit u16 
-	LoaderFlags u32 
-	NumberOfRvaAndSizes u32 
-	DataDirectory [IMAGE_NUMBEROF_DIRECTORY_ENTRIES]IMAGE_DATA_DIRECTORY
+	image_base u32 
+	section_alignment u32 
+	file_alignment u32 
+	major_operating_system_version u16 
+	minor_operating_system_version u16 
+	major_image_version u16 
+	minor_image_version u16
+	major_subsystem_version u16
+	minor_subsystem_version u16 
+	reserved1 u32 
+    size_of_image u32
+	size_of_headers u32 
+	checksum u32 
+	subsystem u16
+ 	dll_characteristics u16 
+	size_of_stack_reserve u16 
+	size_of_stack_commit u16 
+	size_of_heap_reserve u16 
+	size_of_heap_commit u16 
+	loader_flags u32 
+	number_of_rva_and_sizes u32 	
 }
 
-struct IMAGE_SECTION_HEADER {
-	Name [IMAGE_SIZEOF_SHORT_NAME]byte 
-	PhysicalAddress u32
-	VirtualSize u32
-	VirtualAddress u32 
-	SizeOfRawData u32 
-	PointerToRawData u32 
-	PointerToRelocations u32 
-	PointerToLinenumbers u32 
-	NumberOfRelocations u16 
-	NumberOfLinenumbers u16 
-	Characteristics u32 
+pub struct IMAGE_SECTION_HEADER {
+pub mut:
+	name [IMAGE_SIZEOF_SHORT_NAME]byte 
+	physical_address u32
+	virtual_size u32
+	virtual_address u32 
+	size_of_raw_data u32 
+	pointer_to_raw_data u32 
+	pointer_to_relocations u32 
+	pointer_to_linenumbers u32 
+	number_of_relocations u16 
+	number_of_linenumbers u16 
+	characteristics u32 
 }
 
-struct IMAGE_RESOURCE_DIRECTORY_ENTRY {
-    Name u32
-    OffsetToData u32
+pub struct IMAGE_RESOURCE_DIRECTORY_ENTRY {
+pub mut:
+    name u32
+    offset_to_data u32
 }
 
-struct IMAGE_RESOURCE_DIRECTORY {
-    Characteristics u32 
-    TimeDateStamp u32
-    MajorVersion u16 
-    MinorVersion u16
-    NumberOfNamedEntries u16
-    NumberOfIdEntries u16
+pub struct IMAGE_RESOURCE_DIRECTORY {
+pub mut:
+    characteristics u32 
+    time_date_stamp u32
+    major_version u16 
+    minor_version u16
+    number_of_named_entries u16
+    number_of_id_entries u16
 }
 
-struct IMAGE_RESOURCE_DATA_ENTRY {
-    OffsetToData u32
-    Size u32
-    CodePage u32
-    Reserved u32
+pub struct IMAGE_RESOURCE_DATA_ENTRY {
+pub mut:
+    offset_to_data u32
+    size u32
+    code_page u32
+    reserved u32
 }
 
-struct IMAGE_RESOURCE_DIR_STRING_U {
-    Length u16
-    NameString [1]byte
+pub struct IMAGE_RESOURCE_DIR_STRING_U {
+pub mut:
+    length u16
+    name_string [1]byte
 }
 
-struct IMAGE_EXPORT_DIRECTORY {
-    Characteristics u32
-    TimeDateStamp u32
-    MajorVersion u16
-    MinorVersion u16
-    Name u32
-    Base u32
-    NumberOfFunctions u32
-    NumberOfNames u32
-    AddressOfFunctions u32
-    AddressOfNames u32
-    AddressOfNameOrdinals u32
+pub struct IMAGE_EXPORT_DIRECTORY {
+pub mut:
+    characteristics u32
+    time_date_stamp u32
+    major_version u16
+    minor_version u16
+    name u32
+    base u32
+    number_of_functions u32
+    number_of_names u32
+    address_of_functions u32
+    address_of_names u32
+    address_of_name_ordinals u32
 }
 
-struct tagImportDirectory {
-    dwRVAFunctionNameList u32
-    dwUseless1 u32
-    dwUseless2 u32
-    dwRVAModuleName u32
-    dwRVAFunctionAddressList u32
+pub struct TagImportDirectory {
+pub mut:
+    dw_rva_function_name_list u32
+    dw_useless1 u32
+    dw_useless2 u32
+    dw_rva_module_name u32
+    dw_rva_function_address_list u32
 }
 
-
-struct IMAGE_DEBUG_DIRECTORY {
-    ULONG   Characteristics u32
-    ULONG   TimeDateStamp u32
-    USHORT  MajorVersion u16
-    USHORT  MinorVersion u16
-    ULONG   Type u32
-    ULONG   SizeOfData u32
-    ULONG   AddressOfRawData u32
-    ULONG   PointerToRawData u32
+pub struct IMAGE_DEBUG_DIRECTORY {
+pub mut:
+    characteristics u32
+    time_date_stamp u32
+    major_version u16
+    minor_version u16
+    types u32
+    size_of_data u32
+    address_of_raw_data u32
+    pointer_to_raw_data u32
 }
 
 fn (mut dos IMAGE_DOS_HEADER) load(bin []byte) {
@@ -212,22 +224,25 @@ fn (mut dos IMAGE_DOS_HEADER) load(bin []byte) {
 	dos.e_lfanew = binary.little_endian_u32(bin[60..64])
 }
 
-struct Binary  {
+pub struct Binary  {
+pub mut:
 	size int
 	filename string 
 	data []byte	
 	image_dos_header IMAGE_DOS_HEADER
 }
 
-fn load(filename string) Binary {
+pub fn load(filename string) ?&Binary {
 	mut bin := &Binary{}
 
-	bin.size = os.file_size()
-	mut f := os.open(filename)
-	bin.data := f.read_bytes(bin.size)
+	bin.size = os.file_size(filename)
+	mut f := os.open(filename) or { return error('bad filename') }
+	bin.data = f.read_bytes(bin.size)
 	f.close()
 
 	bin.image_dos_header = IMAGE_DOS_HEADER{}
 	bin.image_dos_header.load(bin.data)
+
+	return bin
 }
 
