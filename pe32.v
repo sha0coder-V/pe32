@@ -5,6 +5,7 @@ import encoding.binary
 
 
 // https://blog.kowalczyk.info/articles/pefileformat.html
+// https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32
 
 const (
 	image_dos_signature = 0x5A4D     // MZ 
