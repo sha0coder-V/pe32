@@ -363,8 +363,103 @@ pub fn (op IMAGE_OPTIONAL_HEADER) print() {
 	println('')
 }
 
+////////////// SAVE STRUCTURES //////////////
 
-////////////// BINARY BASE OBJECT ////////////// 
+fn (dos IMAGE_DOS_HEADER) save(mut bin []byte) {
+
+	binary.little_endian_put_u16(mut bin[0..2], dos.e_magic)
+	binary.little_endian_put_u16(mut bin[2..4], dos.e_cblp)
+	binary.little_endian_put_u16(mut bin[4..6], dos.e_cp)
+	binary.little_endian_put_u16(mut bin[6..8], dos.e_crlc)
+	binary.little_endian_put_u16(mut bin[8..10], dos.e_cparhdr)
+	binary.little_endian_put_u16(mut bin[10..12], dos.e_minalloc)
+	binary.little_endian_put_u16(mut bin[12..14], dos.e_maxalloc)
+	binary.little_endian_put_u16(mut bin[14..16], dos.e_ss)
+	binary.little_endian_put_u16(mut bin[16..18], dos.e_sp)
+	binary.little_endian_put_u16(mut bin[18..20], dos.e_csum)
+	binary.little_endian_put_u16(mut bin[20..22], dos.e_ip)
+	binary.little_endian_put_u16(mut bin[22..24], dos.e_cs)
+	binary.little_endian_put_u16(mut bin[24..26], dos.e_lfarlc)
+	binary.little_endian_put_u16(mut bin[26..28], dos.e_ovno)
+
+	binary.little_endian_put_u16(mut bin[28..30], dos.e_res[0])
+	binary.little_endian_put_u16(mut bin[30..32], dos.e_res[1])
+	binary.little_endian_put_u16(mut bin[32..34], dos.e_res[2])
+	binary.little_endian_put_u16(mut bin[34..36], dos.e_res[3])
+
+	binary.little_endian_put_u16(mut bin[36..38], dos.e_oemid)
+	binary.little_endian_put_u16(mut bin[38..40], dos.e_oeminfo)
+
+	binary.little_endian_put_u16(mut bin[40..42], dos.e_res2[0])
+	binary.little_endian_put_u16(mut bin[42..44], dos.e_res2[1])
+	binary.little_endian_put_u16(mut bin[44..46], dos.e_res2[2])
+	binary.little_endian_put_u16(mut bin[46..48], dos.e_res2[3])
+	binary.little_endian_put_u16(mut bin[48..50], dos.e_res2[4])
+	binary.little_endian_put_u16(mut bin[50..52], dos.e_res2[5])
+	binary.little_endian_put_u16(mut bin[52..54], dos.e_res2[6])
+	binary.little_endian_put_u16(mut bin[54..56], dos.e_res2[7])
+	binary.little_endian_put_u16(mut bin[56..58], dos.e_res2[8])
+	binary.little_endian_put_u16(mut bin[58..60], dos.e_res2[9])
+
+	binary.little_endian_put_u32(mut bin[60..64], dos.e_lfanew)
+}
+
+fn (nt IMAGE_NT_HEADERS) save(mut bin []byte) {
+	binary.little_endian_put_u32(mut bin[0..4], nt.signature)
+}
+
+fn (fh IMAGE_FILE_HEADER) save(mut bin []byte) {
+	binary.little_endian_put_u16(mut bin[0..2], fh.machine)
+	binary.little_endian_put_u16(mut bin[2..4], fh.number_of_sections)
+	binary.little_endian_put_u32(mut bin[4..8], fh.time_date_stamp)
+	binary.little_endian_put_u32(mut bin[8..12], fh.pointer_to_symbol_table)
+	binary.little_endian_put_u32(mut bin[12..16], fh.number_of_symbols)
+	binary.little_endian_put_u16(mut bin[16..18], fh.size_of_optional_header)
+	binary.little_endian_put_u16(mut bin[18..20], fh.characteristics)
+}
+
+fn (op IMAGE_OPTIONAL_HEADER) save(mut bin []byte) {
+	binary.little_endian_put_u16(mut bin[0..2], op.magic)
+	bin[2] = op.major_linker_version
+	bin[3] = op.minor_linker_version
+	binary.little_endian_put_u32(mut bin[4..8], op.size_of_code)
+	binary.little_endian_put_u32(mut bin[8..12], op.size_of_initialized_data)
+	binary.little_endian_put_u32(mut bin[12..16], op.size_of_uninitialized_data)
+	binary.little_endian_put_u32(mut bin[16..20], op.address_of_entry_point)
+	binary.little_endian_put_u32(mut bin[20..24], op.base_of_code)
+	binary.little_endian_put_u32(mut bin[24..28], op.base_of_data)
+
+	binary.little_endian_put_u32(mut bin[28..32], op.image_base)
+	binary.little_endian_put_u32(mut bin[32..36], op.section_alignment)
+	binary.little_endian_put_u32(mut bin[36..40], op.file_alignment)
+
+	binary.little_endian_put_u16(mut bin[40..42], op.major_operating_system_version)
+	binary.little_endian_put_u16(mut bin[42..44], op.minor_operating_system_version)
+	binary.little_endian_put_u16(mut bin[44..46], op.major_image_version)
+	binary.little_endian_put_u16(mut bin[46..48], op.minor_image_version)
+	binary.little_endian_put_u16(mut bin[48..50], op.major_subsystem_version)
+	binary.little_endian_put_u16(mut bin[50..52], op.minor_subsystem_version)
+
+	binary.little_endian_put_u32(mut bin[52..56], op.reserved1)
+	binary.little_endian_put_u32(mut bin[56..60], op.size_of_image)
+	binary.little_endian_put_u32(mut bin[60..64], op.size_of_headers)
+	binary.little_endian_put_u32(mut bin[64..68], op.checksum)
+
+	binary.little_endian_put_u16(mut bin[68..70], op.subsystem)
+	binary.little_endian_put_u16(mut bin[70..72], op.dll_characteristics)
+	binary.little_endian_put_u16(mut bin[72..74], op.size_of_stack_reserve)
+	binary.little_endian_put_u16(mut bin[74..76], op.size_of_stack_commit)
+	binary.little_endian_put_u16(mut bin[76..78], op.size_of_heap_reserve)
+	binary.little_endian_put_u16(mut bin[78..80], op.size_of_heap_commit)
+
+	binary.little_endian_put_u32(mut bin[80..84], op.loader_flags)
+	binary.little_endian_put_u32(mut bin[84..88], op.number_of_rva_and_sizes)
+
+	//op.data_directory [IMAGE_NUMBEROF_DIRECTORY_ENTRIES]IMAGE_DATA_DIRECTORY
+}
+
+
+////////////// BINARY BASE OBJECT //////////////
 
 pub struct Binary  {
 pub mut:
@@ -398,5 +493,16 @@ pub fn load(filename string) ?&Binary {
 	bin.opt.load(bin.data[bin.dos.e_lfanew+24..])
 
 	return bin
+}
+
+pub fn (mut bin Binary) save(filename string) {
+	bin.dos.save(mut bin.data)
+	bin.nt.save(mut bin.data[bin.dos.e_lfanew..])
+	bin.fh.save(mut bin.data[bin.dos.e_lfanew+4..])
+	bin.opt.save(mut bin.data[bin.dos.e_lfanew+24..])
+
+	mut f := os.open_file(filename, 'w+') or { panic('cant save to file $filename') }
+	f.write_to(0, bin.data) or { panic('cant save the data') }
+	f.close()
 }
 

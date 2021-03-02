@@ -2,7 +2,7 @@ import pe32
 
 fn test_pe32() {
 
-	bin := pe32.load('pe32/calc.exe') or {
+	mut bin := pe32.load('pe32/calc.exe') or {
 		panic('calc not found')
 	}
 
@@ -15,6 +15,8 @@ fn test_pe32() {
 	bin.nt.print()
 	bin.fh.print()
 	bin.opt.print()
+
+	bin.save('pe32/calc2.exe')
 
 	
 	assert 1==2

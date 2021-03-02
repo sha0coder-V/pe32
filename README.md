@@ -1,6 +1,6 @@
 # PE32
 
-PE32 headers, readonly by now
+PE32 headers read-write
 
 ![show_pe](pics/show_pe.png)
 
