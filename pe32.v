@@ -7,30 +7,32 @@ import encoding.binary
 // https://blog.kowalczyk.info/articles/pefileformat.html
 
 const (
-	IMAGE_DOS_SIGNATURE = 0x5A4D     // MZ
-	IMAGE_OS2_SIGNATURE = 0x454E     // NE
-	IMAGE_OS2_SIGNATURE_LE = 0x454C  // LE
-	IMAGE_NT_SIGNATURE = 0x00004550  // PE00
-	IMAGE_SIZEOF_FILE_HEADER = 20
-	IMAGE_NUMBEROF_DIRECTORY_ENTRIES = 16
-	IMAGE_DIRECTORY_ENTRY_EXPORT = 0
-	IMAGE_DIRECTORY_ENTRY_IMPORT = 1
-	IMAGE_DIRECTORY_ENTRY_RESOURCE = 2
-	IMAGE_DIRECTORY_ENTRY_EXCEPTION = 3
-	IMAGE_DIRECTORY_ENTRY_SECURITY = 4
-	IMAGE_DIRECTORY_ENTRY_BASERELOC = 5
-	IMAGE_DIRECTORY_ENTRY_DEBUG = 6
-	IMAGE_DIRECTORY_ENTRY_COPYRIGHT = 7
-	IMAGE_DIRECTORY_ENTRY_GLOBALPTR = 8
-	IMAGE_DIRECTORY_ENTRY_TLS = 9
-	IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG = 10
-	IMAGE_SIZEOF_SHORT_NAME = 8
-	IMAGE_DEBUG_TYPE_UNKNOWN = 0
-	IMAGE_DEBUG_TYPE_COFF = 1
-	IMAGE_DEBUG_TYPE_CODEVIEW = 2
-	IMAGE_DEBUG_TYPE_FPO = 3
-	IMAGE_DEBUG_TYPE_MISC = 4
+	image_dos_signature = 0x5A4D     // MZ 
+	image_os2_signature = 0x454E     // NE
+	image_os2_signature_le = 0x454C  // LE
+	iamge_nt_signature = 0x00004550  // PE00
+	image_sizeof_file_header = 20
+	image_numberof_directory_entries = 16
+	image_directory_entry_export = 0
+	image_directory_entry_import = 1
+	image_directory_entry_resource = 2
+	iamge_directory_entry_exception = 3
+	image_directory_entry_security = 4
+	image_directory_entry_basereloc = 5
+	image_directory_entry_debug = 6
+	image_directory_entry_copyright = 7
+	image_directory_entry_globalptr = 8
+	image_directory_entry_tls = 9
+	image_directory_entry_load_config = 10
+	image_sizeof_short_name = 8
+	image_debug_type_unknown = 0
+	image_debug_type_coff = 1
+	image_debug_type_codeview = 2
+	image_debug_type_fpo = 3
+	image_debug_type_misc = 4
 )
+
+////////////// STRUCTURES ////////////// 
 
 pub struct IMAGE_DOS_HEADER {
 pub mut:
@@ -55,6 +57,13 @@ pub mut:
 	e_lfanew u32	// File address of new exe header
 }
 
+pub struct IMAGE_NT_HEADERS {
+pub mut:
+	signature u32
+	//file_header u32 // IMAGE_FILE_HEADER
+	//optional_header u32 // IMAGE_OPTIONAL_HEADER
+}
+     
 pub struct IMAGE_FILE_HEADER {
 pub mut:
 	machine u16 
@@ -73,8 +82,7 @@ pub mut:
 }
 
 pub struct IMAGE_OPTIONAL_HEADER {
-pub mut:
-	data_directory [IMAGE_NUMBEROF_DIRECTORY_ENTRIES]IMAGE_DATA_DIRECTORY
+pub mut:	
 	// Standard fields.
 	magic u16
 	major_linker_version byte 
@@ -107,11 +115,12 @@ pub mut:
 	size_of_heap_commit u16 
 	loader_flags u32 
 	number_of_rva_and_sizes u32 	
+	data_directory [image_numberof_directory_entries]IMAGE_DATA_DIRECTORY
 }
 
 pub struct IMAGE_SECTION_HEADER {
 pub mut:
-	name [IMAGE_SIZEOF_SHORT_NAME]byte 
+	name [image_sizeof_short_name]byte 
 	physical_address u32
 	virtual_size u32
 	virtual_address u32 
@@ -190,6 +199,8 @@ pub mut:
     pointer_to_raw_data u32
 }
 
+////////////// LOADERS ////////////// 
+
 fn (mut dos IMAGE_DOS_HEADER) load(bin []byte) {
 	dos.e_magic = binary.little_endian_u16(bin[0..2])
 	dos.e_cblp = binary.little_endian_u16(bin[2..4])
@@ -224,12 +235,146 @@ fn (mut dos IMAGE_DOS_HEADER) load(bin []byte) {
 	dos.e_lfanew = binary.little_endian_u32(bin[60..64])
 }
 
+fn (mut nt IMAGE_NT_HEADERS) load(bin []byte) {
+	nt.signature = binary.little_endian_u32(bin[0..4])
+}
+
+fn (mut fh IMAGE_FILE_HEADER) load(bin []byte) {
+	fh.machine = binary.little_endian_u16(bin[0..2])
+	fh.number_of_sections = binary.little_endian_u16(bin[2..4])
+	fh.time_date_stamp = binary.little_endian_u32(bin[4..8])
+	fh.pointer_to_symbol_table = binary.little_endian_u16(bin[8..12])
+	fh.number_of_symbols = binary.little_endian_u32(bin[12..16])
+	fh.size_of_optional_header = binary.little_endian_u16(bin[16..18])
+	fh.characteristics = binary.little_endian_u16(bin[18..20])
+}
+
+fn (mut op IMAGE_OPTIONAL_HEADER) load(bin []byte) {
+	op.magic = binary.little_endian_u16(bin[0..2])
+	op.major_linker_version = bin[2]
+	op.minor_linker_version = bin[3]
+	op.size_of_code = binary.little_endian_u32(bin[4..8])
+	op.size_of_initialized_data = binary.little_endian_u32(bin[8..12]) 
+	op.size_of_uninitialized_data = binary.little_endian_u32(bin[12..16])
+	op.address_of_entry_point = binary.little_endian_u32(bin[16..20]) 
+	op.base_of_code = binary.little_endian_u32(bin[20..24]) 
+	op.base_of_data = binary.little_endian_u32(bin[24..28])
+	// NT additional fields.
+	op.image_base = binary.little_endian_u32(bin[28..32]) 
+	op.section_alignment = binary.little_endian_u32(bin[32..36]) 
+	op.file_alignment = binary.little_endian_u32(bin[36..40]) 
+	op.major_operating_system_version = binary.little_endian_u16(bin[40..42])
+	op.minor_operating_system_version = binary.little_endian_u16(bin[42..44]) 
+	op.major_image_version = binary.little_endian_u16(bin[44..46]) 
+	op.minor_image_version = binary.little_endian_u16(bin[46..48])
+	op.major_subsystem_version = binary.little_endian_u16(bin[48..50])
+	op.minor_subsystem_version = binary.little_endian_u16(bin[50..52]) 
+	op.reserved1 = binary.little_endian_u32(bin[52..56]) 
+    op.size_of_image = binary.little_endian_u32(bin[56..60])
+	op.size_of_headers = binary.little_endian_u32(bin[60..64]) 
+	op.checksum = binary.little_endian_u32(bin[64..68]) 
+	op.subsystem = binary.little_endian_u16(bin[68..70])
+ 	op.dll_characteristics = binary.little_endian_u16(bin[70..72]) 
+	op.size_of_stack_reserve = binary.little_endian_u16(bin[72..74]) 
+	op.size_of_stack_commit = binary.little_endian_u16(bin[74..76]) 
+	op.size_of_heap_reserve = binary.little_endian_u16(bin[76..78]) 
+	op.size_of_heap_commit = binary.little_endian_u16(bin[78..80]) 
+	op.loader_flags = binary.little_endian_u32(bin[80..84])
+	op.number_of_rva_and_sizes = binary.little_endian_u32(bin[84..88]) 	
+	
+	//op.data_directory [IMAGE_NUMBEROF_DIRECTORY_ENTRIES]IMAGE_DATA_DIRECTORY
+}
+
+////////////// PRINTERS //////////////
+
+pub fn (dos IMAGE_DOS_HEADER) print() {
+	println('-= IMAGE_DOS_HEADER =-')
+	println('Magic number: $dos.e_magic')
+	println('Bytes on last page of file: $dos.e_cblp')
+	println('Pages in file: $dos.e_cp')
+	println('Relocations: $dos.e_crlc')
+	println('Size of header in paragraphs: $dos.e_cparhdr')
+	println('Minimum extra paragraphs needed: $dos.e_minalloc')
+	println('Maximum extra paragraphs needed: $dos.e_maxalloc')
+	println('Initial relative SS value: $dos.e_ss')
+	println('Initial SP value: $dos.e_sp')
+	println('Checksum: $dos.e_csum')
+	println('Initial IP Value: $dos.e_ip')
+	println('Initial relative CS value: $dos.e_cs')
+	println('File address of relocation table: $dos.e_lfarlc')
+	println('Overlay number: $dos.e_ovno')
+	println('OEM identifier: $dos.e_oemid')
+	println('OEM information: $dos.e_oeminfo')
+	println('File address of new exe header: 0x$dos.e_lfanew.hex()')
+	println('')
+}
+
+pub fn (nt IMAGE_NT_HEADERS) print() {
+	println('-= IMAGE_NT_HEADERS =-')
+	println('Signature: $nt.signature')
+	println('')
+}
+
+pub fn (fh IMAGE_FILE_HEADER) print() {
+	println('-= IMAGE_FILE_HEADER =-')
+	println('Machine: $fh.machine')
+	println('Number of sections: $fh.number_of_sections')
+	println('Time Date stamp: $fh.time_date_stamp')
+	println('Ptr to symbol table: 0x$fh.pointer_to_symbol_table.hex()')
+	println('Number of symbols: $fh.number_of_symbols')
+	println('Size of optional header: $fh.size_of_optional_header')
+	println('Characteristics: $fh.characteristics')
+	println('')
+}
+
+pub fn (op IMAGE_OPTIONAL_HEADER) print() {
+	println('-= IMAGE_OPTIONAL_HEADER =-')
+	println('Magic: $op.magic')
+	println('Major linker version: $op.major_linker_version')
+	println('Minor linker version: $op.minor_linker_version')
+	println('Size of code: $op.size_of_code')
+	println('Size of initialized data: $op.size_of_initialized_data')
+	println('Size of uninitialized data: $op.size_of_uninitialized_data')
+	println('Entry point: 0x$op.address_of_entry_point.hex()')
+	println('Base of code: $op.base_of_code')
+	println('Base of data: $op.base_of_data')
+
+	println('Image base: $op.image_base')
+	println('Section alignment: $op.section_alignment')
+	println('File alignment: $op.file_alignment')
+	println('Major operating system version: $op.major_operating_system_version')
+	println('Minor operating system version: $op.minor_operating_system_version')
+	println('Major image version: $op.major_image_version')
+	println('Minor image version: $op.minor_image_version')
+	println('Major subsystem version: $op.major_subsystem_version')
+	println('Minor subsystem version: $op.minor_subsystem_version')
+	println('Reserved1: $op.reserved1')
+    println('Size of image: $op.size_of_image')
+	println('Size of headers: $op.size_of_headers')
+	println('Checksum: $op.checksum')
+	println('Subsystem: $op.subsystem')
+ 	println('Dll characteristics: $op.dll_characteristics')
+	println('Size of stack reserve: $op.size_of_stack_reserve')
+	println('Size of stack commit: $op.size_of_stack_commit')
+	println('Size of heap reserve: $op.size_of_heap_reserve')
+	println('Size of heap commit: $op.size_of_heap_commit')
+	println('Loader flags: $op.loader_flags')
+	println('Number of rva and sizes: $op.number_of_rva_and_sizes')
+	println('')
+}
+
+
+////////////// BINARY BASE OBJECT ////////////// 
+
 pub struct Binary  {
 pub mut:
 	size int
 	filename string 
 	data []byte	
-	image_dos_header IMAGE_DOS_HEADER
+	dos IMAGE_DOS_HEADER
+	nt IMAGE_NT_HEADERS
+	fh IMAGE_FILE_HEADER
+	opt IMAGE_OPTIONAL_HEADER
 }
 
 pub fn load(filename string) ?&Binary {
@@ -240,8 +385,17 @@ pub fn load(filename string) ?&Binary {
 	bin.data = f.read_bytes(bin.size)
 	f.close()
 
-	bin.image_dos_header = IMAGE_DOS_HEADER{}
-	bin.image_dos_header.load(bin.data)
+	bin.dos = IMAGE_DOS_HEADER{}
+	bin.dos.load(bin.data)
+
+	bin.nt = IMAGE_NT_HEADERS{}
+	bin.nt.load(bin.data[bin.dos.e_lfanew..])
+
+	bin.fh = IMAGE_FILE_HEADER{}
+	bin.fh.load(bin.data[bin.dos.e_lfanew+4..])
+
+	bin.opt = IMAGE_OPTIONAL_HEADER{}
+	bin.opt.load(bin.data[bin.dos.e_lfanew+24..])
 
 	return bin
 }

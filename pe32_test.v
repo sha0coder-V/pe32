@@ -6,7 +6,17 @@ fn test_pe32() {
 		panic('calc not found')
 	}
 
-	assert bin.image_dos_header.e_magic == pe32.IMAGE_DOS_SIGNATURE
-	assert bin.image_dos_header.e_lfanew == 216
+	assert bin.dos.e_magic == pe32.image_dos_signature
+	assert bin.dos.e_lfanew == 216
+	assert bin.nt.signature == 17744
 
+
+	bin.dos.print()
+	bin.nt.print()
+	bin.fh.print()
+	bin.opt.print()
+
+	
+	assert 1==2
 }
+
