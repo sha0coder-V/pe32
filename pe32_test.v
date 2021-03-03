@@ -18,7 +18,5 @@ fn test_pe32() {
 
 	bin.save('pe32/calc2.exe')
 
-	
-	assert 1==2
 }
 
