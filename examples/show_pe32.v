@@ -11,4 +11,11 @@ fn main() {
 	bin.nt.print()
 	bin.fh.print()
 	bin.opt.print()
+	for i in 0..pe32.image_numberof_directory_entries {
+		bin.opt.data_directory[i].print()
+	}
+	for i in 0..bin.fh.number_of_sections {
+		bin.section[i].print()
+	}
+
 }

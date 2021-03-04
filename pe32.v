@@ -3,17 +3,23 @@ module pe32
 import os
 import encoding.binary
 
+/*
+ https://blog.kowalczyk.info/articles/pefileformat.html
+ https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32
+ https://github.com/dotnet/llilc/blob/master/include/clr/ntimage.h
+*/
 
-// https://blog.kowalczyk.info/articles/pefileformat.html
-// https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32
 
-const (
+pub const (
 	image_dos_signature = 0x5A4D     // MZ 
 	image_os2_signature = 0x454E     // NE
 	image_os2_signature_le = 0x454C  // LE
 	iamge_nt_signature = 0x00004550  // PE00
 	image_sizeof_file_header = 20
 	image_numberof_directory_entries = 16
+
+	section_header_sz = 40
+
 	image_directory_entry_export = 0
 	image_directory_entry_import = 1
 	image_directory_entry_resource = 2
@@ -25,6 +31,7 @@ const (
 	image_directory_entry_globalptr = 8
 	image_directory_entry_tls = 9
 	image_directory_entry_load_config = 10
+
 	image_sizeof_short_name = 8
 	image_debug_type_unknown = 0
 	image_debug_type_coff = 1
@@ -110,10 +117,10 @@ pub mut:
 	checksum u32 
 	subsystem u16
  	dll_characteristics u16 
-	size_of_stack_reserve u16 
-	size_of_stack_commit u16 
-	size_of_heap_reserve u16 
-	size_of_heap_commit u16 
+	size_of_stack_reserve u32 
+	size_of_stack_commit u32 
+	size_of_heap_reserve u32 
+	size_of_heap_commit u32
 	loader_flags u32 
 	number_of_rva_and_sizes u32 	
 	data_directory [image_numberof_directory_entries]IMAGE_DATA_DIRECTORY
@@ -123,7 +130,7 @@ pub struct IMAGE_SECTION_HEADER {
 pub mut:
 	name [image_sizeof_short_name]byte 
 	physical_address u32
-	virtual_size u32
+	//virtual_size u32
 	virtual_address u32 
 	size_of_raw_data u32 
 	pointer_to_raw_data u32 
@@ -199,6 +206,13 @@ pub mut:
     address_of_raw_data u32
     pointer_to_raw_data u32
 }
+
+pub struct IMAGE_BASE_RELOCATION {
+pub mut:
+    virtual_address u32
+    size_of_block u32
+}
+
 
 ////////////// LOADERS ////////////// 
 
@@ -276,14 +290,38 @@ fn (mut op IMAGE_OPTIONAL_HEADER) load(bin []byte) {
 	op.checksum = binary.little_endian_u32(bin[64..68]) 
 	op.subsystem = binary.little_endian_u16(bin[68..70])
  	op.dll_characteristics = binary.little_endian_u16(bin[70..72]) 
-	op.size_of_stack_reserve = binary.little_endian_u16(bin[72..74]) 
-	op.size_of_stack_commit = binary.little_endian_u16(bin[74..76]) 
-	op.size_of_heap_reserve = binary.little_endian_u16(bin[76..78]) 
-	op.size_of_heap_commit = binary.little_endian_u16(bin[78..80]) 
-	op.loader_flags = binary.little_endian_u32(bin[80..84])
-	op.number_of_rva_and_sizes = binary.little_endian_u32(bin[84..88]) 	
+	op.size_of_stack_reserve = binary.little_endian_u32(bin[72..76]) 
+	op.size_of_stack_commit = binary.little_endian_u32(bin[76..80]) 
+	op.size_of_heap_reserve = binary.little_endian_u32(bin[80..84]) 
+	op.size_of_heap_commit = binary.little_endian_u32(bin[84..88]) 
+	op.loader_flags = binary.little_endian_u32(bin[88..92])
+	op.number_of_rva_and_sizes = binary.little_endian_u32(bin[92..96]) 	
 	
-	//op.data_directory [IMAGE_NUMBEROF_DIRECTORY_ENTRIES]IMAGE_DATA_DIRECTORY
+	mut off := 96
+	for i in 0..image_numberof_directory_entries {
+		op.data_directory[i].virtual_address = binary.little_endian_u32(bin[off..off+4]) 
+		op.data_directory[i].size = binary.little_endian_u32(bin[off+4..off+8])
+		off += 8
+	}
+}
+
+pub fn (mut sect IMAGE_SECTION_HEADER) load(bin []byte) {
+	mut off := 0
+	for off < image_sizeof_short_name {
+		sect.name[off] = bin[off]
+		off++
+	}
+
+	sect.physical_address = binary.little_endian_u32(bin[off..off+4])
+	//sect.virtual_size = binary.little_endian_u32(bin[off+4..off+8])
+	sect.virtual_address = binary.little_endian_u32(bin[off+4..off+8])
+	sect.size_of_raw_data = binary.little_endian_u32(bin[off+8..off+12])
+	sect.pointer_to_raw_data = binary.little_endian_u32(bin[off+12..off+16])
+	sect.pointer_to_relocations = binary.little_endian_u32(bin[off+16..off+20])
+	sect.pointer_to_linenumbers = binary.little_endian_u32(bin[off+20..off+24])
+	sect.number_of_relocations = binary.little_endian_u16(bin[off+24..off+26])
+	sect.number_of_linenumbers = binary.little_endian_u16(bin[off+26..off+28])
+	sect.characteristics = binary.little_endian_u32(bin[off+28..off+32])
 }
 
 ////////////// PRINTERS //////////////
@@ -361,6 +399,31 @@ pub fn (op IMAGE_OPTIONAL_HEADER) print() {
 	println('Size of heap commit: $op.size_of_heap_commit')
 	println('Loader flags: $op.loader_flags')
 	println('Number of rva and sizes: $op.number_of_rva_and_sizes')
+	println('')
+}
+
+pub fn (dir IMAGE_DATA_DIRECTORY) print() {
+	println('-= IMAGE_DATA_DIRECTORY =-')
+	println('Virtual address: $dir.virtual_address')
+	println('Size: $dir.size')
+	println('')
+}
+
+pub fn (sect IMAGE_SECTION_HEADER) print() {
+	println('-= IMAGE_SECTION_HEADER =-')
+	println('name: $sect.name')
+	name := string(sect.name)
+	println('Section name: $name')
+	println('Physical address: 0x$sect.physical_address.hex()')
+	println('Virtual size: $sect.virtual_size')
+	println('Virtual address: 0x$sect.virtual_address.hex()')
+	println('Size of raw data: $sect.size_of_raw_data')
+	println('Ptr to raw data: 0x$sect.pointer_to_raw_data.hex()')
+	println('Ptr to relocs: 0x$sect.pointer_to_relocations.hex()')
+	println('Ptr to line numbers: 0x$sect.pointer_to_linenumbers.hex()')
+	println('Number of relocations: $sect.number_of_relocations')
+	println('Number of line numbers: $sect.number_of_linenumbers')
+	println('Characteristics: $sect.characteristics')
 	println('')
 }
 
@@ -448,15 +511,20 @@ fn (op IMAGE_OPTIONAL_HEADER) save(mut bin []byte) {
 
 	binary.little_endian_put_u16(mut bin[68..70], op.subsystem)
 	binary.little_endian_put_u16(mut bin[70..72], op.dll_characteristics)
-	binary.little_endian_put_u16(mut bin[72..74], op.size_of_stack_reserve)
-	binary.little_endian_put_u16(mut bin[74..76], op.size_of_stack_commit)
-	binary.little_endian_put_u16(mut bin[76..78], op.size_of_heap_reserve)
-	binary.little_endian_put_u16(mut bin[78..80], op.size_of_heap_commit)
+	binary.little_endian_put_u32(mut bin[72..76], op.size_of_stack_reserve)
+	binary.little_endian_put_u32(mut bin[76..80], op.size_of_stack_commit)
+	binary.little_endian_put_u32(mut bin[80..84], op.size_of_heap_reserve)
+	binary.little_endian_put_u32(mut bin[84..88], op.size_of_heap_commit)
 
-	binary.little_endian_put_u32(mut bin[80..84], op.loader_flags)
-	binary.little_endian_put_u32(mut bin[84..88], op.number_of_rva_and_sizes)
+	binary.little_endian_put_u32(mut bin[88..92], op.loader_flags)
+	binary.little_endian_put_u32(mut bin[92..96], op.number_of_rva_and_sizes)
 
-	//op.data_directory [IMAGE_NUMBEROF_DIRECTORY_ENTRIES]IMAGE_DATA_DIRECTORY
+	mut off := 96
+	for i in 0..image_numberof_directory_entries {
+		binary.little_endian_put_u32(mut bin[off..off+4], op.data_directory[i].virtual_address)
+		binary.little_endian_put_u32(mut bin[off+4..off+8], op.data_directory[i].size)
+		off += 8
+	}
 }
 
 
@@ -471,6 +539,7 @@ pub mut:
 	nt IMAGE_NT_HEADERS
 	fh IMAGE_FILE_HEADER
 	opt IMAGE_OPTIONAL_HEADER
+	sections []IMAGE_SECTION_HEADER
 }
 
 pub fn load(filename string) ?&Binary {
@@ -485,13 +554,28 @@ pub fn load(filename string) ?&Binary {
 	bin.dos.load(bin.data)
 
 	bin.nt = IMAGE_NT_HEADERS{}
-	bin.nt.load(bin.data[bin.dos.e_lfanew..])
+	bin.nt.load(bin.data[bin.dos.e_lfanew..bin.dos.e_lfanew+4])
 
 	bin.fh = IMAGE_FILE_HEADER{}
-	bin.fh.load(bin.data[bin.dos.e_lfanew+4..])
+	bin.fh.load(bin.data[bin.dos.e_lfanew+4..bin.dos.e_lfanew+24])
 
 	bin.opt = IMAGE_OPTIONAL_HEADER{}
-	bin.opt.load(bin.data[bin.dos.e_lfanew+24..])
+	bin.opt.load(bin.data[bin.dos.e_lfanew+24..bin.dos.e_lfanew+248])
+
+	// load sections
+	mut off := bin.dos.e_lfanew+248
+	for _ in 0..bin.fh.number_of_sections {
+		mut sect := IMAGE_SECTION_HEADER{}
+
+		sect.load(bin.data[off..])
+
+		bin.sections << sect
+		off += section_header_sz
+	}
+
+	// debug, save to disk the bytes:
+	off = bin.dos.e_lfanew+248
+
 
 	return bin
 }
