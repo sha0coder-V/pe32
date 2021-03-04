@@ -15,7 +15,7 @@ fn main() {
 		bin.opt.data_directory[i].print()
 	}
 	for i in 0..bin.fh.number_of_sections {
-		bin.section[i].print()
+		bin.sections[i].print()
 	}
 
 }

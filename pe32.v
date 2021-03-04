@@ -415,7 +415,7 @@ pub fn (sect IMAGE_SECTION_HEADER) print() {
 	name := string(sect.name)
 	println('Section name: $name')
 	println('Physical address: 0x$sect.physical_address.hex()')
-	println('Virtual size: $sect.virtual_size')
+	//println('Virtual size: $sect.virtual_size')
 	println('Virtual address: 0x$sect.virtual_address.hex()')
 	println('Size of raw data: $sect.size_of_raw_data')
 	println('Ptr to raw data: 0x$sect.pointer_to_raw_data.hex()')
@@ -528,6 +528,24 @@ fn (op IMAGE_OPTIONAL_HEADER) save(mut bin []byte) {
 }
 
 
+pub fn (sect IMAGE_SECTION_HEADER) save(mut bin []byte) {
+	mut off := 0
+	for off < image_sizeof_short_name {
+		bin[off] = sect.name[off]
+		off++
+	}
+
+	binary.little_endian_put_u32(mut bin[off..off+4], sect.physical_address)
+	binary.little_endian_put_u32(mut bin[off+4..off+8], sect.virtual_address)
+	binary.little_endian_put_u32(mut bin[off+8..off+12], sect.size_of_raw_data)
+	binary.little_endian_put_u32(mut bin[off+16..off+20], sect.pointer_to_relocations)
+	binary.little_endian_put_u32(mut bin[off+20..off+24], sect.pointer_to_linenumbers)
+	binary.little_endian_put_u16(mut bin[off+24..off+26], sect.number_of_relocations)
+	binary.little_endian_put_u16(mut bin[off+26..off+28], sect.number_of_linenumbers)
+	binary.little_endian_put_u32(mut bin[off+28..off+32], sect.characteristics)
+}
+
+
 ////////////// BINARY BASE OBJECT //////////////
 
 pub struct Binary  {
@@ -573,18 +591,20 @@ pub fn load(filename string) ?&Binary {
 		off += section_header_sz
 	}
 
-	// debug, save to disk the bytes:
-	off = bin.dos.e_lfanew+248
-
-
 	return bin
 }
 
 pub fn (mut bin Binary) save(filename string) {
 	bin.dos.save(mut bin.data)
-	bin.nt.save(mut bin.data[bin.dos.e_lfanew..])
-	bin.fh.save(mut bin.data[bin.dos.e_lfanew+4..])
-	bin.opt.save(mut bin.data[bin.dos.e_lfanew+24..])
+	bin.nt.save(mut bin.data[bin.dos.e_lfanew..bin.dos.e_lfanew+4])
+	bin.fh.save(mut bin.data[bin.dos.e_lfanew+4..bin.dos.e_lfanew+24])
+	bin.opt.save(mut bin.data[bin.dos.e_lfanew+24..bin.dos.e_lfanew+248])
+
+	mut off := bin.dos.e_lfanew+248
+	for sect in bin.sections { 
+		sect.save(mut bin.data[off..])
+		off += section_header_sz
+	}
 
 	mut f := os.open_file(filename, 'w+') or { panic('cant save to file $filename') }
 	f.write_to(0, bin.data) or { panic('cant save the data') }

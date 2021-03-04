@@ -26,8 +26,11 @@ fn test_pe32() {
 	for i in 0..bin.fh.number_of_sections {
 		bin.sections[i].print()
 	}
-	
-	assert 1==2
+
+
+	// modification
+	bin.sections[0].name[1] = `T`
+
 
 	bin.save('pe32/calc2.exe')
 }
