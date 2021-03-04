@@ -1,4 +1,4 @@
-import pe32 
+import sha0coder_v.pe32
 import os
 
 fn main() {

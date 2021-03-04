@@ -4,9 +4,9 @@ import os
 import encoding.binary
 
 /*
- https://blog.kowalczyk.info/articles/pefileformat.html
- https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32
- https://github.com/dotnet/llilc/blob/master/include/clr/ntimage.h
+	https://blog.kowalczyk.info/articles/pefileformat.html
+	https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32
+	https://github.com/dotnet/llilc/blob/master/include/clr/ntimage.h
 */
 
 
