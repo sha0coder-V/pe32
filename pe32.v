@@ -411,8 +411,7 @@ pub fn (dir IMAGE_DATA_DIRECTORY) print() {
 
 pub fn (sect IMAGE_SECTION_HEADER) print() {
 	println('-= IMAGE_SECTION_HEADER =-')
-	println('name: $sect.name')
-	name := string(sect.name)
+	name := string{str:&sect.name[0],len:image_sizeof_short_name}
 	println('Section name: $name')
 	println('Physical address: 0x$sect.physical_address.hex()')
 	//println('Virtual size: $sect.virtual_size')
