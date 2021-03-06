@@ -11,7 +11,8 @@ fn test_pe32() {
 	assert bin.nt.signature == 17744
 	assert bin.opt.magic == 267
 	assert bin.opt.data_directory[pe32.image_directory_entry_debug].size == 56
-	assert string(bin.sections[0].name) == '.text'
+	assert bin.sections[0].name[0] == `.`
+
 
 
 	bin.dos.print()
@@ -27,10 +28,14 @@ fn test_pe32() {
 		bin.sections[i].print()
 	}
 
+	bin.import_dir.print()
+	bin.export_dir.print()
+
 
 	// modification
 	bin.sections[0].name[1] = `T`
 
+	assert 1==2
 
 	bin.save('pe32/calc2.exe')
 }

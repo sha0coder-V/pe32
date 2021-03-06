@@ -1,4 +1,5 @@
-import sha0coder_v.pe32
+//import sha0coder_v.pe32
+import pe32
 import os
 
 fn main() {
@@ -17,5 +18,8 @@ fn main() {
 	for i in 0..bin.fh.number_of_sections {
 		bin.sections[i].print()
 	}
+
+	bin.import_dir.print()
+	bin.export_dir.print()
 
 }

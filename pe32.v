@@ -129,8 +129,8 @@ pub mut:
 pub struct IMAGE_SECTION_HEADER {
 pub mut:
 	name [image_sizeof_short_name]byte 
-	physical_address u32
-	//virtual_size u32
+	//physical_address u32
+	virtual_size u32
 	virtual_address u32 
 	size_of_raw_data u32 
 	pointer_to_raw_data u32 
@@ -139,6 +139,14 @@ pub mut:
 	number_of_relocations u16 
 	number_of_linenumbers u16 
 	characteristics u32 
+}
+
+pub fn (sect IMAGE_SECTION_HEADER) get_name() string {
+	mut s := ''
+	for b in sect.name {
+		s += b.ascii_str()
+	}
+	return s
 }
 
 pub struct IMAGE_RESOURCE_DIRECTORY_ENTRY {
@@ -184,6 +192,15 @@ pub mut:
     address_of_functions u32
     address_of_names u32
     address_of_name_ordinals u32
+}
+
+pub struct IMAGE_IMPORT_DIRECTORY {
+pub mut:
+	address_of_import_lookup_table u32
+	time_date_stamp u32 
+	forwarder_chain u32 
+	address_of_names u32 
+	address_of_import_table u32
 }
 
 pub struct TagImportDirectory {
@@ -305,15 +322,15 @@ fn (mut op IMAGE_OPTIONAL_HEADER) load(bin []byte) {
 	}
 }
 
-pub fn (mut sect IMAGE_SECTION_HEADER) load(bin []byte) {
+fn (mut sect IMAGE_SECTION_HEADER) load(bin []byte) {
 	mut off := 0
 	for off < image_sizeof_short_name {
 		sect.name[off] = bin[off]
 		off++
 	}
 
-	sect.physical_address = binary.little_endian_u32(bin[off..off+4])
-	//sect.virtual_size = binary.little_endian_u32(bin[off+4..off+8])
+	//sect.physical_address = binary.little_endian_u32(bin[off..off+4])
+	sect.virtual_size = binary.little_endian_u32(bin[off..off+4])
 	sect.virtual_address = binary.little_endian_u32(bin[off+4..off+8])
 	sect.size_of_raw_data = binary.little_endian_u32(bin[off+8..off+12])
 	sect.pointer_to_raw_data = binary.little_endian_u32(bin[off+12..off+16])
@@ -323,6 +340,29 @@ pub fn (mut sect IMAGE_SECTION_HEADER) load(bin []byte) {
 	sect.number_of_linenumbers = binary.little_endian_u16(bin[off+26..off+28])
 	sect.characteristics = binary.little_endian_u32(bin[off+28..off+32])
 }
+
+fn (mut im IMAGE_IMPORT_DIRECTORY) load(bin []byte) {
+	im.address_of_import_lookup_table = binary.little_endian_u32(bin[0..4])
+	im.time_date_stamp = binary.little_endian_u32(bin[4..8])
+	im.forwarder_chain = binary.little_endian_u32(bin[8..12])
+	im.address_of_names = binary.little_endian_u32(bin[12..16])
+	im.address_of_import_table = binary.little_endian_u32(bin[16..20])
+}
+
+fn (mut ex IMAGE_EXPORT_DIRECTORY) load(bin []byte) {
+	ex.characteristics = binary.little_endian_u32(bin[0..4])	
+	ex.time_date_stamp = binary.little_endian_u32(bin[4..8])	
+	ex.major_version = binary.little_endian_u16(bin[8..10])
+	ex.minor_version = binary.little_endian_u16(bin[10..12])
+	ex.name = binary.little_endian_u32(bin[12..16])
+	ex.base = binary.little_endian_u32(bin[16..20])
+	ex.number_of_functions = binary.little_endian_u32(bin[20..24])
+	ex.number_of_names = binary.little_endian_u32(bin[24..28])
+	ex.address_of_functions = binary.little_endian_u32(bin[28..32])
+	ex.address_of_names = binary.little_endian_u32(bin[32..36])
+	ex.address_of_name_ordinals = binary.little_endian_u32(bin[36..40])
+}
+
 
 ////////////// PRINTERS //////////////
 
@@ -411,10 +451,9 @@ pub fn (dir IMAGE_DATA_DIRECTORY) print() {
 
 pub fn (sect IMAGE_SECTION_HEADER) print() {
 	println('-= IMAGE_SECTION_HEADER =-')
-	name := string{str:&sect.name[0],len:image_sizeof_short_name}
+	name := sect.get_name()
 	println('Section name: $name')
-	println('Physical address: 0x$sect.physical_address.hex()')
-	//println('Virtual size: $sect.virtual_size')
+	println('Virtual size: $sect.virtual_size')
 	println('Virtual address: 0x$sect.virtual_address.hex()')
 	println('Size of raw data: $sect.size_of_raw_data')
 	println('Ptr to raw data: 0x$sect.pointer_to_raw_data.hex()')
@@ -425,6 +464,33 @@ pub fn (sect IMAGE_SECTION_HEADER) print() {
 	println('Characteristics: $sect.characteristics')
 	println('')
 }
+
+pub fn (im IMAGE_IMPORT_DIRECTORY) print() {
+	println('-= IMAGE_IMPORT_DIRECTORY =-')
+	println('Address of import lookup table: 0x$im.address_of_import_lookup_table.hex()')
+	println('Time date stamp: $im.time_date_stamp')
+	println('Forwarder chain: $im.forwarder_chain')
+	println('Address of names: 0x$im.address_of_names.hex()')
+	println('Address of import table: 0x$im.address_of_import_table.hex()')
+	println('')
+}
+
+pub fn (ex IMAGE_EXPORT_DIRECTORY) print() {
+	println('-= IMAGE_EXPORT_DIRECTORY =-')
+	println('Characteristics: $ex.characteristics')
+	println('Time date stamp: $ex.time_date_stamp')
+	println('Major version: $ex.major_version')
+	println('Minor version: $ex.minor_version')
+	println('Name: $ex.name')
+	println('Base: $ex.base')
+	println('Number of functions: $ex.number_of_functions')
+	println('Number of names: $ex.number_of_names')
+	println('Address of functions: 0x$ex.address_of_functions.hex()')
+	println('Address of names: 0x$ex.address_of_names.hex()')
+	println('Address of name ordinals: 0x$ex.address_of_name_ordinals.hex()')
+	println('')
+}
+
 
 ////////////// SAVE STRUCTURES //////////////
 
@@ -534,7 +600,7 @@ pub fn (sect IMAGE_SECTION_HEADER) save(mut bin []byte) {
 		off++
 	}
 
-	binary.little_endian_put_u32(mut bin[off..off+4], sect.physical_address)
+	binary.little_endian_put_u32(mut bin[off..off+4], sect.virtual_size)
 	binary.little_endian_put_u32(mut bin[off+4..off+8], sect.virtual_address)
 	binary.little_endian_put_u32(mut bin[off+8..off+12], sect.size_of_raw_data)
 	binary.little_endian_put_u32(mut bin[off+16..off+20], sect.pointer_to_relocations)
@@ -542,6 +608,28 @@ pub fn (sect IMAGE_SECTION_HEADER) save(mut bin []byte) {
 	binary.little_endian_put_u16(mut bin[off+24..off+26], sect.number_of_relocations)
 	binary.little_endian_put_u16(mut bin[off+26..off+28], sect.number_of_linenumbers)
 	binary.little_endian_put_u32(mut bin[off+28..off+32], sect.characteristics)
+}
+
+fn (im IMAGE_IMPORT_DIRECTORY) save(mut bin []byte) {
+	binary.little_endian_put_u32(mut bin[0..4], im.address_of_import_lookup_table)
+	binary.little_endian_put_u32(mut bin[4..8], im.time_date_stamp)
+	binary.little_endian_put_u32(mut bin[8..12], im.forwarder_chain)
+	binary.little_endian_put_u32(mut bin[12..16], im.address_of_names)
+	binary.little_endian_put_u32(mut bin[16..20], im.address_of_import_table)
+}
+
+fn (ex IMAGE_EXPORT_DIRECTORY) save(mut bin []byte) {
+	binary.little_endian_put_u32(mut bin[0..4], ex.characteristics)
+	binary.little_endian_put_u32(mut bin[4..8], ex.time_date_stamp)
+	binary.little_endian_put_u16(mut bin[8..10], ex.major_version)
+	binary.little_endian_put_u16(mut bin[10..12], ex.minor_version)
+	binary.little_endian_put_u32(mut bin[12..16], ex.name)
+	binary.little_endian_put_u32(mut bin[16..20], ex.base)
+	binary.little_endian_put_u32(mut bin[20..24], ex.number_of_functions)
+	binary.little_endian_put_u32(mut bin[24..28], ex.number_of_names)
+	binary.little_endian_put_u32(mut bin[28..32], ex.address_of_functions)
+	binary.little_endian_put_u32(mut bin[32..36], ex.address_of_names)
+	binary.little_endian_put_u32(mut bin[36..40], ex.address_of_name_ordinals)
 }
 
 
@@ -557,6 +645,19 @@ pub mut:
 	fh IMAGE_FILE_HEADER
 	opt IMAGE_OPTIONAL_HEADER
 	sections []IMAGE_SECTION_HEADER
+	import_dir IMAGE_IMPORT_DIRECTORY
+	export_dir IMAGE_EXPORT_DIRECTORY
+}
+
+pub fn (bin Binary) vaddr_to_off(vaddr u32) ?u32 {
+	for section in bin.sections {
+		if vaddr > section.virtual_address && 
+		   vaddr < section.virtual_address + section.virtual_size {
+			   println('found in section $section.get_name()')
+			   return vaddr - section.virtual_address + section.pointer_to_raw_data
+		}
+	}
+	return error('Incorrect virtual address')
 }
 
 pub fn load(filename string) ?&Binary {
@@ -588,6 +689,30 @@ pub fn load(filename string) ?&Binary {
 
 		bin.sections << sect
 		off += section_header_sz
+	}
+
+	bin.import_dir = IMAGE_IMPORT_DIRECTORY{}
+	bin.export_dir = IMAGE_EXPORT_DIRECTORY{}
+
+	import_va := bin.opt.data_directory[image_directory_entry_import].virtual_address
+	export_va := bin.opt.data_directory[image_directory_entry_export].virtual_address
+
+	if import_va > 0 {
+		import_off := bin.vaddr_to_off(import_va) or { 0 }
+
+		if import_off > 0 {
+			println('loading import_dir at $import_off')
+			bin.import_dir.load(bin.data[import_off..])
+		}
+	}
+
+	if export_va > 0 {
+		export_off := bin.vaddr_to_off(export_va) or { 0 }
+
+		if export_off > 0 {
+			println('loading export_dir at $export_off')
+			bin.export_dir.load(bin.data[export_off..])
+		}
 	}
 
 	return bin
