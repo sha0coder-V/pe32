@@ -10,35 +10,33 @@ import encoding.binary
 */
 
 
-pub const (
-	image_dos_signature = 0x5A4D     // MZ 
-	image_os2_signature = 0x454E     // NE
-	image_os2_signature_le = 0x454C  // LE
-	iamge_nt_signature = 0x00004550  // PE00
-	image_sizeof_file_header = 20
-	image_numberof_directory_entries = 16
+pub const image_dos_signature = 0x5A4D     // MZ 
+pub const image_os2_signature = 0x454E     // NE
+pub const image_os2_signature_le = 0x454C  // LE
+pub const iamge_nt_signature = 0x00004550  // PE00
+pub const image_sizeof_file_header = 20
+pub const image_numberof_directory_entries = 16
 
-	section_header_sz = 40
+pub const section_header_sz = 40
 
-	image_directory_entry_export = 0
-	image_directory_entry_import = 1
-	image_directory_entry_resource = 2
-	iamge_directory_entry_exception = 3
-	image_directory_entry_security = 4
-	image_directory_entry_basereloc = 5
-	image_directory_entry_debug = 6
-	image_directory_entry_copyright = 7
-	image_directory_entry_globalptr = 8
-	image_directory_entry_tls = 9
-	image_directory_entry_load_config = 10
+pub const image_directory_entry_export = 0
+pub const image_directory_entry_import = 1
+pub const image_directory_entry_resource = 2
+pub const iamge_directory_entry_exception = 3
+pub const image_directory_entry_security = 4
+pub const image_directory_entry_basereloc = 5
+pub const image_directory_entry_debug = 6
+pub const image_directory_entry_copyright = 7
+pub const image_directory_entry_globalptr = 8
+pub const image_directory_entry_tls = 9
+pub const image_directory_entry_load_config = 10
 
-	image_sizeof_short_name = 8
-	image_debug_type_unknown = 0
-	image_debug_type_coff = 1
-	image_debug_type_codeview = 2
-	image_debug_type_fpo = 3
-	image_debug_type_misc = 4
-)
+pub const image_sizeof_short_name = 8
+pub const image_debug_type_unknown = 0
+pub const image_debug_type_coff = 1
+pub const image_debug_type_codeview = 2
+pub const image_debug_type_fpo = 3
+pub const image_debug_type_misc = 4
 
 ////////////// STRUCTURES ////////////// 
 
